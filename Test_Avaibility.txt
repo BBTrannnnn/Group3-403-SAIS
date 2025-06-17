@@ -1,2 +1,7 @@
 Dat
 Chương trình có xử lý được với đầu vào là số 0 hoặc 1 không?
+@Dung_Nhi
+1. Vì sao việc chỉ dựa vào các mức "99.9%", "99.99%" thì không đủ để đảm bảo Availability phù hợp với yêu cầu thực tế của hệ thống?
+2. Vì sao việc đo Availability đối với phần mềm lại khó khăn hơn so với phần cứng?
+3. Trong trường hợp nào thì hệ thống có thể đạt availability cao nhưng vẫn khiến người dùng không hài lòng?
+
