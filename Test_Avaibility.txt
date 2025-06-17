@@ -1,1 +1,2 @@
-
+Dat
+Chương trình có xử lý được với đầu vào là số 0 hoặc 1 không?
