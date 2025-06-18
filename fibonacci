@@ -1,1 +1,32 @@
+from flask import Flask, request, jsonify
+from flask_caching import Cache
 
+app = Flask(__name__)
+
+app.config['CACHE_TYPE'] = 'SimpleCache'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 60  # Cache 60 giây
+cache = Cache(app)
+
+
+def fibonacci(n):
+    result = []
+    a, b = 0, 1
+    for _ in range(n):
+        result.append(a)
+        a, b = b, a + b
+    return result
+
+@app.route('/fibonacci', methods=['GET'])
+@cache.cached(query_string=True)  # Cache dựa trên tham số n
+def get_fibonacci():
+    n_str = request.args.get('n', '10')
+
+    if not n_str.isdigit():
+        return jsonify({'error': 'n phải là số nguyên không âm'}), 400
+
+    n = int(n_str)
+    sequence = fibonacci(n)
+    return jsonify({'fibonacci': sequence})
+
+if __name__ == '__main__':
+    app.run(debug=True)
