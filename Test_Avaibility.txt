@@ -1,7 +1,7 @@
 @LeHuuThanhDat
-1. Chương trình có xử lý được với đầu vào là số 0 hoặc 1 không?
-2. Chương trình có hoạt động ổn định khi đầu vào là một số lớn (ví dụ: 10.000) không?
-3. Chương trình có chạy được trên nhiều môi trường khác nhau (Windows, Linux, IDE online, v.v.) mà không cần chỉnh sửa không?
+1. Làm thế nào để cân bằng giữa availability cao và chi phí vận hành, đặc biệt trong các hệ thống không yêu cầu 24/7 uptime?
+2. Một hệ thống có uptime 99.99% vẫn bị người dùng than phiền thường xuyên không truy cập được. Theo bạn, nguyên nhân có thể là gì?
+3. Vì sao chỉ số MTTR (Mean Time To Recovery) quan trọng không kém gì MTBF (Mean Time Between Failures) trong đánh giá availability?
 @Dung_Nhi
 1. Vì sao việc chỉ dựa vào các mức "99.9%", "99.99%" thì không đủ để đảm bảo Availability phù hợp với yêu cầu thực tế của hệ thống?
 2. Vì sao việc đo Availability đối với phần mềm lại khó khăn hơn so với phần cứng?
