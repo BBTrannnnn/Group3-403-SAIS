@@ -10,4 +10,7 @@
 1.Những phương pháp nào có thể dùng để thay thế MBTF để đo lường tính sẵn sàng của phần mềm?
 2.Trong trường hợp xảy ra "fail-operational", làm sao để xác định khi nào nên tiếp tục chạy với hiệu năng suy giảm và khi nào nên tắt hoàn toàn?
 3.Nếu nhiều lỗi phát sinh và đều đưa ra các biểu hiện giống nhau nhưng lại ko thể xử lý 1 lần được,thì chúng ta sẽ nên ưu tiên sửa những lỗi nào trước?
-
+@PhucHung
+1. Vì sao một hệ thống có thể có availability cao nhưng reliability lại thấp? Hệ quả của điều này là gì đối với trải nghiệm người dùng?
+2. Nếu một hệ thống chỉ đảm bảo availability cao vào giờ hành chính nhưng không ổn định vào ban đêm, điều đó có vi phạm yêu cầu về availability không? Tại sao?
+3. Trong một hệ thống phân tán, vì sao việc tăng số lượng node không luôn dẫn đến tăng availability? Có tình huống nào khiến availability giảm khi mở rộng không?
