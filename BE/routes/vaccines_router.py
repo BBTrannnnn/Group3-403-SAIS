@@ -26,7 +26,7 @@ def add_vaccine():
     data = request.get_json()
 
     if not data:
-        return jsonify({'error': 'Yêu cầu phải gửi dữ liệu JSON hợp lệ'}), 400
+        return jsonify({'Lỗi': 'Yêu cầu phải gửi dữ liệu JSON hợp lệ'}), 400
 
     # Lấy dữ liệu từ JSON
     id_vaccines = data.get('id')  
@@ -40,14 +40,14 @@ def add_vaccine():
 
     # Kiểm tra các trường bắt buộc
     if id_vaccines is None:
-        return jsonify({'error': 'ID vaccine là bắt buộc'}), 400
+        return jsonify({'Lỗi': 'ID vaccine là bắt buộc'}), 400
     if Vaccine.query.get(id_vaccines):
-        return jsonify({'error': 'ID vaccine đã tồn tại'}), 400
+        return jsonify({'Lỗi': 'ID vaccine đã tồn tại'}), 400
 
     if not name:
-        return jsonify({'error': 'Tên vaccine là bắt buộc'}), 400
+        return jsonify({'Lỗi': 'Tên vaccine là bắt buộc'}), 400
     if quantity is None or not isinstance(quantity, int) or quantity < 0:
-        return jsonify({'error': 'Số lượng vaccine phải là số nguyên không âm'}), 400
+        return jsonify({'Lỗi': 'Số lượng vaccine phải là số nguyên không âm'}), 400
 
     try:
         vaccine = Vaccine(
@@ -64,25 +64,25 @@ def add_vaccine():
         db.session.add(vaccine)
         db.session.commit()
 
-        return jsonify({'message': 'Thêm vaccine thành công'}), 201
+        return jsonify({'Thông báo': 'Thêm vaccine thành công'}), 201
 
     except ValueError:
-        return jsonify({'error': 'Hiệu quả vaccine (efficacy) phải là số'}), 400
+        return jsonify({'Lỗi': 'Hiệu quả vaccine (efficacy) phải là số'}), 400
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'Lỗi khi thêm vaccine: {str(e)}'}), 500
+        return jsonify({'Lỗi': f'Lỗi khi thêm vaccine: {str(e)}'}), 500
 
 @vaccines_bp.route('/<int:id_vaccines>', methods=['PUT'])
 def update_vaccine(id_vaccines):
     data = request.get_json()
 
     if not data:
-        return jsonify({'error': 'Yêu cầu phải gửi dữ liệu JSON hợp lệ'}), 400
+        return jsonify({'Lỗi': 'Yêu cầu phải gửi dữ liệu JSON hợp lệ'}), 400
 
     vaccine = Vaccine.query.get(id_vaccines)
     if not vaccine:
-        return jsonify({'error': 'Vaccine không tồn tại'}), 404
+        return jsonify({'Lỗi': 'Vaccine không tồn tại'}), 404
 
     # Cập nhật nếu có, không thì giữ nguyên
     vaccine.name = data.get('name', vaccine.name)
@@ -95,36 +95,36 @@ def update_vaccine(id_vaccines):
         efficacy_value = data.get('efficacy', vaccine.efficacy)
         vaccine.efficacy = float(efficacy_value) if efficacy_value is not None else None
     except ValueError:
-        return jsonify({'error': 'Hiệu quả vaccine (efficacy) phải là số'}), 400
+        return jsonify({'Lỗi': 'Hiệu quả vaccine (efficacy) phải là số'}), 400
 
     vaccine.side_effects = data.get('side_effects', vaccine.side_effects)
 
     try:
         db.session.commit()
-        return jsonify({'message': 'Cập nhật vaccine thành công'}), 200
+        return jsonify({'Thông báo': 'Cập nhật vaccine thành công'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'Lỗi khi cập nhật vaccine: {str(e)}'}), 500
+        return jsonify({'Lỗi': f'Lỗi khi cập nhật vaccine: {str(e)}'}), 500
 
 @vaccines_bp.route('/<int:id_vaccines>', methods=['DELETE'])    
 def delete_vaccine(id_vaccines):
     vaccine = Vaccine.query.get(id_vaccines)
     if not vaccine:
-        return jsonify({'error': 'Vaccine không tồn tại'}), 404
+        return jsonify({'Lỗi': 'Vaccine không tồn tại'}), 404
 
     try:
         db.session.delete(vaccine)
         db.session.commit()
-        return jsonify({'message': 'Xóa vaccine thành công'}), 200
+        return jsonify({'Thông báo': 'Xóa vaccine thành công'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'Lỗi khi xóa vaccine: {str(e)}'}), 500
+        return jsonify({'Lỗi': f'Lỗi khi xóa vaccine: {str(e)}'}), 500
     
 @vaccines_bp.route('/<int:id_vaccines>', methods=['GET'])
 def get_vaccine_by_id(id_vaccines): 
     vaccine = Vaccine.query.get(id_vaccines)
     if not vaccine:
-        return jsonify({'error': 'Vaccine không tồn tại'}), 404
+        return jsonify({'Lỗi': 'Vaccine không tồn tại'}), 404
 
     return jsonify({
         'id': vaccine.id_vaccines,
@@ -170,13 +170,13 @@ def vaccine_stats():
         }), 200
 
     except Exception as e:
-        return jsonify({'error': f'Lỗi khi thống kê: {str(e)}'}), 500
+        return jsonify({'Lỗi': f'Lỗi khi thống kê: {str(e)}'}), 500
     
 # @vaccines_bp.route('/search', methods=['GET'])
 # def search_vaccines():  
 #     query = request.args.get('query', '').strip()
 #     if not query:
-#         return jsonify({'error': 'Yêu cầu phải cung cấp từ khóa tìm kiếm'}), 400
+#         return jsonify({'Lỗi': 'Yêu cầu phải cung cấp từ khóa tìm kiếm'}), 400
 
 #     vaccines = Vaccine.query.filter(
 #         Vaccine.name.ilike(f'%{query}%') |
@@ -186,4 +186,4 @@ def vaccine_stats():
 #         Vaccine.category.ilike(f'%{query}%')
 #     ).all()
 #     if not vaccines:
-#         return jsonify({'message': 'Không tìm thấy vaccine nào phù hợp với từ khóa'}), 404
+#         return jsonify({'Thông báo': 'Không tìm thấy vaccine nào phù hợp với từ khóa'}), 404

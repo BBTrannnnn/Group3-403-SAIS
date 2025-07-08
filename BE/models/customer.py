@@ -14,5 +14,7 @@ class Customer(db.Model):
     medical_history = db.Column(db.Unicode(255), nullable=True)
     vaccine_reaction_history = db.Column(db.Unicode(255), nullable=True)
 
+    appointments = db.relationship('Appointment', backref='customer', cascade='all, delete-orphan')
+
     def __repr__(self):
         return f'<Customer {self.customer_name}>'

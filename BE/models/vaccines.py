@@ -12,5 +12,7 @@ class Vaccine(db.Model):
     category = db.Column(db.Unicode(50), nullable=False, default='Bắt buộc')
     quantity = db.Column(db.Integer, nullable=False, default=1)
 
+    appointments = db.relationship('Appointment', backref='vaccine', cascade='all, delete-orphan')
+
     def __repr__(self):
         return f'<Vaccine {self.name}>'

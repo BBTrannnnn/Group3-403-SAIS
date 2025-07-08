@@ -7,6 +7,9 @@ from datetime import datetime
 from models.customer import Customer, db
 from models.vaccines import db, Vaccine
 from routes.vaccines_router import vaccines_bp  # Route quản lý vaccine
+from models.appointment import Appointment,db  # Import model Appointment
+from routes.appointment_router import appointment_bp  # Route quản lý lịch hẹn
+
 
 app = Flask(__name__)
 # Cấu hình ứng dụng
@@ -20,6 +23,8 @@ CORS(app)
 app.register_blueprint(vaccines_bp, url_prefix='/api/vaccines')
 # Đăng ký blueprint cho khách hàng
 app.register_blueprint(customer_bp, url_prefix='/api/customers')
+# Đăng ký blueprint cho lịch hẹn
+app.register_blueprint(appointment_bp, url_prefix='/api/appointments')
 
 # Tạo bảng nếu chưa có
 with app.app_context():
