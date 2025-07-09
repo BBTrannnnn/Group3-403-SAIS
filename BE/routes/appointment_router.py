@@ -148,12 +148,21 @@ def confirm_appointment(id):
         return jsonify({'Lỗi': 'Trạng thái không hợp lệ. Chỉ chấp nhận "Đã duyệt" hoặc "Từ chối".'}), 400
 
     try:
+        if new_status == 'Đã duyệt':
+            vaccine = Vaccine.query.get(appointment.id_vaccine)
+            if not vaccine:
+                return jsonify({'Lỗi': 'Không tìm thấy vaccine'}), 404
+            if vaccine.quantity <= 0:
+                return jsonify({'Lỗi': 'Vaccine đã hết. Không thể duyệt lịch tiêm này.'}), 400
+            vaccine.quantity -= 1  # Phân bổ 1 liều
+
         appointment.status = new_status
         db.session.commit()
         return jsonify({'message': f'Lịch tiêm đã được cập nhật thành: {new_status}'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'Lỗi': f'Lỗi khi cập nhật trạng thái: {str(e)}'}), 500
+
     
 @appointment_bp.route('/history/<int:id_customer>', methods=['GET'])
 def get_appointment_history(id_customer):
