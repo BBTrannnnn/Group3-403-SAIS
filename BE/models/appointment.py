@@ -13,5 +13,6 @@ class Appointment(db.Model):
     id_customer = db.Column(db.Integer, db.ForeignKey('customers.id_customer'), nullable=False)
     id_vaccine = db.Column(db.Integer, db.ForeignKey('vaccines.id_vaccines'), nullable=False)
     dose_number = db.Column(db.Unicode(20), nullable=False)  # Mũi 1, Mũi 2, Nhắc lại
+    status = db.Column(db.Unicode(255), default='Chờ duyệt')
     def __repr__(self):
         return f'<Appointment {self.id_appointment} for Customer {self.id_customer}>'

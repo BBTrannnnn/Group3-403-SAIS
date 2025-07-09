@@ -18,7 +18,8 @@ def get_appointments():
         'location': a.location,
         'id_customer': a.id_customer,
         'id_vaccine': a.id_vaccine,
-        'dose_number': a.dose_number
+        'dose_number': a.dose_number,
+        'status': a.status,
     } for a in appointments]), 200
 
 
@@ -60,7 +61,8 @@ def register_appointment():
             location=location,
             id_customer=id_customer,
             id_vaccine=id_vaccine,
-            dose_number=dose_number
+            dose_number=dose_number,
+            status='Chờ duyệt'  
         )
         db.session.add(appointment)
         db.session.commit()
@@ -68,7 +70,7 @@ def register_appointment():
         customer = db.session.get(Customer, id_customer)
         vaccine = db.session.get(Vaccine, id_vaccine)
         return jsonify({
-            'message': 'Đăng ký lịch tiêm thành công',
+            'message': 'Đăng ký lịch tiêm thành công.Vui lòng chờ xác nhận từ nhân viên y tế.',
             'appointment': {
                 'date': scheduled_date,
                 'time_slot': time_slot,
@@ -131,3 +133,52 @@ def delete_appointment(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'Lỗi': f'Lỗi khi xóa lịch tiêm: {str(e)}'}), 500
+
+# Nhân viên duyệt lịch
+@appointment_bp.route('/<int:id>/confirm', methods=['PUT'])
+def confirm_appointment(id):
+    data = request.get_json()
+    appointment = Appointment.query.get(id)
+
+    if not appointment:
+        return jsonify({'Lỗi': 'Không tìm thấy lịch tiêm'}), 404
+
+    new_status = data.get('status')
+    if new_status not in ['Đã duyệt', 'Từ chối']:
+        return jsonify({'Lỗi': 'Trạng thái không hợp lệ. Chỉ chấp nhận "Đã duyệt" hoặc "Từ chối".'}), 400
+
+    try:
+        appointment.status = new_status
+        db.session.commit()
+        return jsonify({'message': f'Lịch tiêm đã được cập nhật thành: {new_status}'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'Lỗi': f'Lỗi khi cập nhật trạng thái: {str(e)}'}), 500
+    
+@appointment_bp.route('/history/<int:id_customer>', methods=['GET'])
+def get_appointment_history(id_customer):
+    # Kiểm tra khách hàng có tồn tại không
+    customer = Customer.query.get(id_customer)
+    if not customer:
+        return jsonify({'Lỗi': 'Không tìm thấy khách hàng'}), 404
+
+    # Lấy lịch sử tiêm của khách hàng
+    appointments = Appointment.query.filter_by(id_customer=id_customer).order_by(Appointment.scheduled_date.desc()).all()
+
+    history = []
+    for a in appointments:
+        vaccine = Vaccine.query.get(a.id_vaccine)
+        history.append({
+            'id_appointment': a.id_appointment,
+            'scheduled_date': a.scheduled_date.strftime('%Y-%m-%d'),
+            'time_slot': a.time_slot,
+            'location': a.location,
+            'vaccine': vaccine.name if vaccine else "Không rõ",
+            'dose_number': a.dose_number,
+            'status': a.status
+        })
+
+    return jsonify({
+        'Tên khách hàng': customer.customer_name,
+        'Lịch sử tiêm': history
+    }), 200
