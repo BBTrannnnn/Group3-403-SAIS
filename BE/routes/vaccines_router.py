@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from models.vaccines import Vaccine,db
+from models.vaccines import Vaccine,db,VaccineBackup
 from datetime import datetime
 from sqlalchemy import func
 
@@ -27,35 +27,42 @@ def add_vaccine():
 
     if not data:
         return jsonify({'Lỗi': 'Yêu cầu phải gửi dữ liệu JSON hợp lệ'}), 400
-
-    # Lấy dữ liệu từ JSON
+    
     id_vaccines = data.get('id')  
     name = data.get('name')
     description = data.get('description')
     manufacturer = data.get('manufacturer')
     efficacy = data.get('efficacy')
     side_effects = data.get('side_effects')
-    category = data.get('category', 'Bắt buộc')  # Mặc định là 'Bắt buộc' nếu không có
+    category = data.get('category', 'Bắt buộc')
     quantity = data.get('quantity', 1)
 
-    # Kiểm tra các trường bắt buộc
+
     if id_vaccines is None:
         return jsonify({'Lỗi': 'ID vaccine là bắt buộc'}), 400
-    if Vaccine.query.get(id_vaccines):
-        return jsonify({'Lỗi': 'ID vaccine đã tồn tại'}), 400
-
     if not name:
         return jsonify({'Lỗi': 'Tên vaccine là bắt buộc'}), 400
     if quantity is None or not isinstance(quantity, int) or quantity < 0:
         return jsonify({'Lỗi': 'Số lượng vaccine phải là số nguyên không âm'}), 400
 
     try:
+        efficacy_value = float(efficacy) if efficacy is not None else None
+    except ValueError:
+        return jsonify({'Lỗi': 'Hiệu quả vaccine (efficacy) phải là số'}), 400
+
+    # ⚠️ Cố gắng ghi vào DB chính
+    try:
+        # ✅ CHẶN truy vấn nếu server đã tắt (phòng lỗi 233)
+        existing = db.session.get(Vaccine, id_vaccines)
+        if existing:
+            return jsonify({'Lỗi': 'ID vaccine đã tồn tại'}), 400
+
         vaccine = Vaccine(
             id_vaccines=id_vaccines,
             name=name,
             description=description,
             manufacturer=manufacturer,
-            efficacy=float(efficacy) if efficacy is not None else None,
+            efficacy=efficacy_value,
             side_effects=side_effects,
             category=category,
             quantity=quantity
@@ -63,15 +70,35 @@ def add_vaccine():
 
         db.session.add(vaccine)
         db.session.commit()
-
-        return jsonify({'Thông báo': 'Thêm vaccine thành công'}), 201
-
-    except ValueError:
-        return jsonify({'Lỗi': 'Hiệu quả vaccine (efficacy) phải là số'}), 400
+        return jsonify({'Thông báo': 'Thêm vaccine vào DB chính thành công'}), 201
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'Lỗi': f'Lỗi khi thêm vaccine: {str(e)}'}), 500
+        print(f"[!] Lỗi DB chính: {e} → Chuyển qua DB phụ")
+
+        try:
+            # Trước khi thêm vào backup
+            existing = db.session.get(VaccineBackup, id_vaccines)
+            if existing:
+                return jsonify({'Thông báo': 'ID đã tồn tại trong DB phụ, bỏ qua ghi trùng'}), 409
+
+            backup = VaccineBackup(
+                id_vaccines=id_vaccines,
+                name=name,
+                description=description,
+                manufacturer=manufacturer,
+                efficacy=efficacy_value,
+                side_effects=side_effects,
+                category=category,
+                quantity=quantity
+            )
+            db.session.add(backup)
+            db.session.commit()
+            return jsonify({'Thông báo': 'DB chính lỗi  đã lưu vào DB phụ'}), 202
+
+        except Exception as ex:
+            db.session.rollback()
+            return jsonify({'Lỗi': 'Lỗi khi lưu cả DB chính và phụ', 'Chi tiết': str(ex)}), 500
 
 @vaccines_bp.route('/<int:id_vaccines>', methods=['PUT'])
 def update_vaccine(id_vaccines):
@@ -171,7 +198,29 @@ def vaccine_stats():
 
     except Exception as e:
         return jsonify({'Lỗi': f'Lỗi khi thống kê: {str(e)}'}), 500
-    
+# @vaccines_bp.route('/test-backup', methods=['GET'])
+# def test_backup_vaccine():
+#     try:
+#         # Tạo bản ghi mẫu vào DB phụ
+#         test_vaccine = VaccineBackup(
+#             id_vaccines=99,
+#             name="Vaccine Test SQLite",
+#             description="Test ghi vào DB phụ",
+#             manufacturer="SQLite Co.",
+#             efficacy=0.99,
+#             side_effects="Không rõ",
+#             category="Tự nguyện",
+#             quantity=123
+#         )
+
+#         db.session.add(test_vaccine)
+#         db.session.commit()
+#         return jsonify({'Thông báo': '✅ Đã ghi bản ghi vào DB phụ (SQLite) thành công!'}), 201
+
+#     except Exception as e:
+#         db.session.rollback()
+#         return jsonify({'Lỗi': f'❌ Ghi DB phụ thất bại: {str(e)}'}), 500
+   
 # @vaccines_bp.route('/search', methods=['GET'])
 # def search_vaccines():  
 #     query = request.args.get('query', '').strip()

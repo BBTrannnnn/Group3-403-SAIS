@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from models import db
-from models.appointment import Appointment
+from models.appointment import Appointment, AppointmentBackup
 from models.customer import Customer
 from models.vaccines import Vaccine
 from datetime import datetime
@@ -29,23 +29,20 @@ def register_appointment():
 
     if not data:
         return jsonify({'Lỗi': 'Phải cung cấp dữ liệu JSON'}), 400
-    
+
     scheduled_date = data.get('scheduled_date')
     time_slot = data.get('time_slot')
     location = data.get('location')
     id_customer = data.get('id_customer')
     id_vaccine = data.get('id_vaccine')
-    dose_number = data.get('dose_number')  # Mũi 1, Mũi 2, Mũi nhắc lại
+    dose_number = data.get('dose_number')
 
-    # Kiểm tra bắt buộc
-    if not all([scheduled_date, time_slot, location, id_customer, id_vaccine, dose_number  ]):
+    if not all([scheduled_date, time_slot, location, id_customer, id_vaccine, dose_number]):
         return jsonify({'Lỗi': 'Thiếu thông tin bắt buộc'}), 400
 
     try:
-        # Định dạng ngày
         scheduled_date_obj = datetime.strptime(scheduled_date, '%Y-%m-%d').date()
 
-        # Kiểm tra khách hàng và vaccine có tồn tại không
         customer = Customer.query.get(id_customer)
         vaccine = Vaccine.query.get(id_vaccine)
 
@@ -54,7 +51,7 @@ def register_appointment():
         if not vaccine:
             return jsonify({'Lỗi': 'Vaccine không tồn tại'}), 404
 
-        # Tạo lịch hẹn
+
         appointment = Appointment(
             scheduled_date=scheduled_date_obj,
             time_slot=time_slot,
@@ -62,15 +59,15 @@ def register_appointment():
             id_customer=id_customer,
             id_vaccine=id_vaccine,
             dose_number=dose_number,
-            status='Chờ duyệt'  
+            status='Chờ duyệt'
         )
+
         db.session.add(appointment)
         db.session.commit()
 
-        customer = db.session.get(Customer, id_customer)
-        vaccine = db.session.get(Vaccine, id_vaccine)
+
         return jsonify({
-            'message': 'Đăng ký lịch tiêm thành công.Vui lòng chờ xác nhận từ nhân viên y tế.',
+            'message': 'Đăng ký lịch tiêm thành công. Vui lòng chờ xác nhận từ nhân viên y tế.',
             'appointment': {
                 'date': scheduled_date,
                 'time_slot': time_slot,
@@ -81,11 +78,40 @@ def register_appointment():
             }
         }), 201
 
-    except ValueError:
-        return jsonify({'Lỗi': 'Định dạng ngày phải là YYYY-MM-DD'}), 400
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'Lỗi': f'Lỗi khi đăng ký: {str(e)}'}), 500
+        print(f"[!] DB chính lỗi: {e} → Chuyển qua DB phụ")
+
+        # Ghi vào DB phụ nếu DB chính lỗi
+        try:
+            backup = AppointmentBackup(
+                scheduled_date=scheduled_date_obj,
+                time_slot=time_slot,
+                location=location,
+                id_customer=id_customer,
+                id_vaccine=id_vaccine,
+                dose_number=dose_number,
+                status='Chờ duyệt'
+            )
+            db.session.add(backup)
+            db.session.commit()
+
+            return jsonify({
+                'message': 'DB chính lỗi. Đã lưu lịch hẹn vào DB phụ.',
+                'appointment': {
+                    'date': scheduled_date,
+                    'time_slot': time_slot,
+                    'location': location,
+                    'customer_id': id_customer,
+                    'vaccine_id': id_vaccine,
+                    'dose': dose_number
+                }
+            }), 202
+
+        except Exception as ex:
+            db.session.rollback()
+            return jsonify({'Lỗi': 'Lỗi khi lưu vào cả DB chính và phụ', 'Chi tiết': str(ex)}), 500
     
 
 @appointment_bp.route('/<int:id>', methods=['PUT'])

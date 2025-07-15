@@ -16,3 +16,19 @@ class Vaccine(db.Model):
 
     def __repr__(self):
         return f'<Vaccine {self.name}>'
+    
+class VaccineBackup(db.Model):
+    __bind_key__ = 'backup'
+    __tablename__ = 'vaccines_backup'
+
+    id_vaccines = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.Unicode(100), nullable=False)
+    description = db.Column(db.Unicode(100), nullable=True)
+    manufacturer = db.Column(db.Unicode(100), nullable=True)
+    efficacy = db.Column(db.Float, nullable=True)
+    side_effects = db.Column(db.Unicode(100), nullable=True)
+    category = db.Column(db.Unicode(50), nullable=False, default='Bắt buộc')
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+
+    def __repr__(self):
+        return f'<VaccineBackup {self.name}>'

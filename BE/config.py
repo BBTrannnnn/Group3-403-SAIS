@@ -14,4 +14,8 @@ class Config:
     )
 
     SQLALCHEMY_DATABASE_URI = f"mssql+pyodbc:///?odbc_connect={params}"
+
+    SQLALCHEMY_BINDS = {
+        'backup': 'sqlite:///backup_vaccine.db?check_same_thread=False'
+    }
     SQLALCHEMY_TRACK_MODIFICATIONS = False

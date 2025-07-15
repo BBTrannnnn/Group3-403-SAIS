@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from models.customer import Customer, db
+from models.customer import Customer, db, CustomerBackup
 from datetime import datetime
 from sqlalchemy import func
 
@@ -25,9 +25,7 @@ def add_customer():
 
     if not data:
         return jsonify({'Lỗi': 'Yêu cầu phải gửi dữ liệu JSON hợp lệ'}), 400
-
-    # Lấy dữ liệu từ JSON
-
+    
     customer_name = data.get('name')
     day_of_birth = data.get('day_of_birth')
     sex = data.get('sex')
@@ -37,14 +35,14 @@ def add_customer():
     address = data.get('address')
     medical_history = data.get('medical_history')
     vaccine_reaction_history = data.get('vaccine_reaction_history')
-    # Kiểm tra các trường bắt buộc
+
 
     if not customer_name:
         return jsonify({'Lỗi': 'Tên khách hàng là bắt buộc'}), 400
     if not day_of_birth:
         return jsonify({'Lỗi': 'Ngày sinh là bắt buộc'}), 400
 
-    # Kiểm tra ngày sinh hợp lệ, không ở tương lai và >= 18 tuổi
+
     try:
         dob = datetime.strptime(day_of_birth, '%Y-%m-%d').date()
         today = datetime.today().date()
@@ -56,6 +54,7 @@ def add_customer():
             return jsonify({'Lỗi': 'Khách hàng phải từ 18 tuổi trở lên để đăng ký'}), 400
     except ValueError:
         return jsonify({'Lỗi': 'Định dạng ngày sinh không hợp lệ. Dùng YYYY-MM-DD'}), 400
+
     if not sex:
         return jsonify({'Lỗi': 'Giới tính là bắt buộc'}), 400
     if not phone_number:
@@ -72,6 +71,8 @@ def add_customer():
         return jsonify({'Lỗi': 'Tiền sử bệnh phải là chuỗi ký tự'}), 400
     if vaccine_reaction_history and not isinstance(vaccine_reaction_history, str):
         return jsonify({'Lỗi': 'Tiền sử phản ứng vaccine phải là chuỗi ký tự'}), 400
+
+    # ⚠️ Ghi vào DB chính
     try:
         customer = Customer(
             customer_name=customer_name,
@@ -86,10 +87,37 @@ def add_customer():
         )
         db.session.add(customer)
         db.session.commit()
-        return jsonify({'Thông báo': 'Thêm khách hàng thành công'}), 201
+        return jsonify({'Thông báo': 'Thêm khách hàng thành công vào DB chính'}), 201
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'Lỗi': f'Lỗi khi thêm khách hàng: {str(e)}'}), 500
+        print(f"[!] Lỗi DB chính: {e} → Ghi DB phụ")
+
+        # 🟡 Ghi vào DB phụ
+        try:
+            existing = db.session.get(CustomerBackup, phone_number)
+            if existing:
+                return jsonify({'Thông báo': 'Khách hàng đã tồn tại trong DB phụ, bỏ qua ghi trùng'}), 409
+
+            backup = CustomerBackup(
+                customer_name=customer_name,
+                day_of_birth=dob,
+                sex=sex,
+                phone_number=phone_number,
+                cccd=cccd,
+                email=email,
+                address=address,
+                medical_history=medical_history,
+                vaccine_reaction_history=vaccine_reaction_history
+            )
+            db.session.add(backup)
+            db.session.commit()
+            return jsonify({'Thông báo': 'DB chính lỗi – đã lưu vào DB phụ'}), 202
+
+        except Exception as ex:
+            db.session.rollback()
+            return jsonify({'Lỗi': 'Lỗi khi lưu cả DB chính và phụ', 'Chi tiết': str(ex)}), 500
+
     
 @customer_bp.route('/<int:id>', methods=['PUT'])
 def update_customer(id):
